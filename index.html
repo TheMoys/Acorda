@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Motor de Emociones - Prueba</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; text-align: center; }
+        button { padding: 1rem 2rem; font-size: 1.2rem; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; }
+        button:hover { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h2>Fase 1: El sonido de la melancolía</h2>
+    <p>Haz clic en el botón para inicializar el motor de audio y escuchar el acorde base.</p>
+    
+    <button id="btn-melancolia">Escuchar La menor (Am)</button>
+
+    <script>
+        const boton = document.getElementById('btn-melancolia');
+
+        // 1. Creamos un sintetizador polifónico (necesario para tocar acordes) 
+        // y lo conectamos a la salida principal (los altavoces)
+        const sintetizador = new Tone.PolySynth(Tone.Synth).toDestination();
+
+        boton.addEventListener('click', async () => {
+            // 2. REGLA DE ORO: Los navegadores modernos bloquean el audio hasta que el usuario interactúa.
+            // Tone.start() le dice al navegador "el usuario ha hecho clic, dame permiso para sonar".
+            await Tone.start();
+            
+            // 3. Definimos las notas del acorde de La menor (Tónica, Tercera menor, Quinta justa)
+            const acordeAm = ["D3", "F#4", "A4"];
+            
+            // 4. Disparamos el acorde. "2n" significa que durará una blanca (medio compás)
+            sintetizador.triggerAttackRelease(acordeAm, "2n");
+        });
+    </script>
+</body>
+</html>
