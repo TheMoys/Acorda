@@ -16,12 +16,29 @@ export function playChord(notes) {
 }
 
 export async function playProgression(progression, dictionary) {
-    await Tone.start(); // Aseguramos que el contexto de audio esté activo
+    await Tone.start();
     const now = Tone.now();
-    const duration = Tone.Time("2n").toSeconds();
+    
+    // Configuramos un tempo virtual (cuánto dura cada acorde entero)
+    const duracionAcorde = Tone.Time("1m").toSeconds(); // 1 compás entero (más lento y relajado)
+    
+    // Calculamos el espacio entre cada nota del arpegio
+    // Si el acorde tiene 3 notas, las dividimos equitativamente en ese compás
+    const velocidadArpegio = 0.3; // Segundos de diferencia entre nota y nota
 
-    progression.forEach((chordName, index) => {
+    progression.forEach((chordName, indiceAcorde) => {
         const notes = dictionary[chordName].notes;
-        synth.triggerAttackRelease(notes, "2n", now + (index * duration));
+        
+        // Calculamos cuándo empieza este acorde en la línea de tiempo
+        const inicioAcorde = now + (indiceAcorde * duracionAcorde);
+
+        // En lugar de tocar el bloque, iteramos sobre cada nota individualmente
+        notes.forEach((nota, indiceNota) => {
+            // Cada nota suena un poco más tarde que la anterior
+            const inicioNota = inicioAcorde + (indiceNota * velocidadArpegio);
+            
+            // Hacemos que la nota sea corta y saltarina ("8n" = corchea)
+            synth.triggerAttackRelease(nota, "8n", inicioNota);
+        });
     });
 }
