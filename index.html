@@ -2,37 +2,126 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Motor de Emociones - Prueba</title>
+    <title>Acorda - Fase 1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 2rem; text-align: center; }
-        button { padding: 1rem 2rem; font-size: 1.2rem; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; }
+        body { font-family: sans-serif; padding: 2rem; max-width: 600px; margin: 0 auto; text-align: center; }
+        .contenedor-botones { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .contenedor-reproductor { margin-top: 30px; display: none; gap: 15px; justify-content: center; }
+        button { padding: 1rem; font-size: 1.1rem; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background-color: #fff; }
         button:hover { background-color: #f0f0f0; }
+        .btn-principal { background-color: #e0e7ff; border-color: #a5b4fc; font-weight: bold; }
+        .btn-play { background-color: #dcfce3; border-color: #86efac; font-weight: bold; }
+        .btn-reset { background-color: #fee2e2; border-color: #fca5a5; }
+        #historial { margin-top: 30px; font-size: 1.4rem; color: #333; font-weight: bold; letter-spacing: 2px; }
     </style>
 </head>
 <body>
-    <h2>Fase 1: El sonido de la melancolía</h2>
-    <p>Haz clic en el botón para inicializar el motor de audio y escuchar el acorde base.</p>
-    
-    <button id="btn-melancolia">Escuchar La menor (Am)</button>
+    <h2>acorda: modo melancolía</h2>
+    <p>Crea tu progresión de 4 acordes.</p>
+
+    <button id="btn-inicio" class="btn-principal">Iniciar con La menor (Am)</button>
+
+    <div id="opciones" class="contenedor-botones"></div>
+
+    <div id="historial">_ _ _ _</div>
+
+    <div id="controles-reproductor" class="contenedor-reproductor">
+        <button id="btn-play" class="btn-play">▶ Reproducir Canción</button>
+        <button id="btn-reset" class="btn-reset">Empezar de cero</button>
+    </div>
 
     <script>
-        const boton = document.getElementById('btn-melancolia');
+        const diccionarioAcordes = {
+            "Am": { notas: ["A3", "C4", "E4"], siguientes: [{ etiqueta: "Añadir tensión", destino: "E7" }, { etiqueta: "Dar un respiro", destino: "Fmaj7" }, { etiqueta: "Hacerlo más oscuro", destino: "Dm" }] },
+            "E7": { notas: ["E3", "G#3", "B3", "D4"], siguientes: [{ etiqueta: "Resolver a casa", destino: "Am" }, { etiqueta: "Resolución sorpresa", destino: "Fmaj7" }] },
+            "Fmaj7": { notas: ["F3", "A3", "C4", "E4"], siguientes: [{ etiqueta: "Crear tensión para volver", destino: "E7" }, { etiqueta: "Caer en la oscuridad", destino: "Dm" }] },
+            "Dm": { notas: ["D3", "F3", "A3"], siguientes: [{ etiqueta: "Volver a la base", destino: "Am" }, { etiqueta: "Preparar el final", destino: "E7" }] }
+        };
 
-        // 1. Creamos un sintetizador polifónico (necesario para tocar acordes) 
-        // y lo conectamos a la salida principal (los altavoces)
-        const sintetizador = new Tone.PolySynth(Tone.Synth).toDestination();
+        let sintetizador;
+        let progresionActual = []; // Memoria de la canción
+        const limiteAcordes = 4;
 
-        boton.addEventListener('click', async () => {
-            // 2. REGLA DE ORO: Los navegadores modernos bloquean el audio hasta que el usuario interactúa.
-            // Tone.start() le dice al navegador "el usuario ha hecho clic, dame permiso para sonar".
+        const contenedorOpciones = document.getElementById('opciones');
+        const textoHistorial = document.getElementById('historial');
+        const btnInicio = document.getElementById('btn-inicio');
+        const controlesReproductor = document.getElementById('controles-reproductor');
+
+        async function inicializarAudio() {
+            if (!sintetizador) {
+                await Tone.start();
+                sintetizador = new Tone.PolySynth(Tone.Synth).toDestination();
+            }
+        }
+
+        function agregarAcorde(nombreAcorde) {
+            if (progresionActual.length >= limiteAcordes) return;
+
+            progresionActual.push(nombreAcorde);
+            actualizarPantalla();
+
+            // Solo reproducimos el acorde suelto si estamos construyendo
+            const acorde = diccionarioAcordes[nombreAcorde];
+            if (sintetizador) sintetizador.triggerAttackRelease(acorde.notas, "2n");
+
+            // Si llegamos al límite, paramos el proceso
+            if (progresionActual.length === limiteAcordes) {
+                contenedorOpciones.innerHTML = ''; // Limpiamos opciones
+                controlesReproductor.style.display = 'flex'; // Mostramos el play
+            } else {
+                renderizarOpciones(nombreAcorde);
+            }
+        }
+
+        function actualizarPantalla() {
+            // Rellenamos visualmente los huecos: Am - Fmaj7 - _ - _
+            const representacion = [];
+            for(let i=0; i < limiteAcordes; i++) {
+                representacion.push(progresionActual[i] || "_");
+            }
+            textoHistorial.innerText = representacion.join("   ");
+        }
+
+        function renderizarOpciones(nombreAcordeActual) {
+            contenedorOpciones.innerHTML = '';
+            const acorde = diccionarioAcordes[nombreAcordeActual];
+            if (!acorde || !acorde.siguientes) return;
+
+            acorde.siguientes.forEach(opcion => {
+                const boton = document.createElement('button');
+                boton.innerText = opcion.etiqueta + " (" + opcion.destino + ")";
+                boton.addEventListener('click', () => agregarAcorde(opcion.destino));
+                contenedorOpciones.appendChild(boton);
+            });
+        }
+
+        // --- LÓGICA DEL REPRODUCTOR ---
+        document.getElementById('btn-play').addEventListener('click', async () => {
             await Tone.start();
             
-            // 3. Definimos las notas del acorde de La menor (Tónica, Tercera menor, Quinta justa)
-            const acordeAm = ["D3", "F#4", "A4"];
-            
-            // 4. Disparamos el acorde. "2n" significa que durará una blanca (medio compás)
-            sintetizador.triggerAttackRelease(acordeAm, "2n");
+            // Tone.now() nos da el tiempo actual exacto del navegador
+            let tiempoDeInicio = Tone.now(); 
+            const duracionAcorde = Tone.Time("2n").toSeconds(); // Duración de medio compás
+
+            progresionActual.forEach((nombreAcorde, indice) => {
+                const notas = diccionarioAcordes[nombreAcorde].notas;
+                // Programamos cada acorde para que suene uno detrás de otro
+                sintetizador.triggerAttackRelease(notas, "2n", tiempoDeInicio + (indice * duracionAcorde));
+            });
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            progresionActual = [];
+            actualizarPantalla();
+            controlesReproductor.style.display = 'none';
+            btnInicio.style.display = 'inline-block';
+        });
+
+        btnInicio.addEventListener('click', async () => {
+            await inicializarAudio();
+            btnInicio.style.display = 'none';
+            agregarAcorde("Am");
         });
     </script>
 </body>
