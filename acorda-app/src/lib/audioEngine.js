@@ -1,17 +1,41 @@
 import * as Tone from 'tone';
 
-let synth;
+let sampler;
 
 export async function initAudio() {
-    if (!synth) {
-        await Tone.start();
-        synth = new Tone.PolySynth(Tone.Synth).toDestination();
-    }
+    // Si ya está cargado, no hacemos nada
+    if (sampler) return;
+
+    await Tone.start();
+
+    // Creamos el Sampler apuntando a audios reales
+    sampler = new Tone.Sampler({
+        urls: {
+            "C3": "C3.mp3",
+            "C4": "C4.mp3",
+            "C5": "C5.mp3"
+        },
+        // Usamos este repositorio público para el prototipo
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+    }).toDestination();
+
+    // Añadimos una reverberación sutil para que el piano suene en una "habitación"
+    const reverb = new Tone.Reverb({
+        decay: 2.5,
+        preDelay: 0.1
+    }).toDestination();
+    
+    sampler.connect(reverb);
+
+    // LA REGLA DE ORO: Pausamos la ejecución del código hasta que 
+    // todos los mp3 se hayan descargado de internet.
+    await Tone.loaded();
 }
 
 export function playChord(notes) {
-    if (synth) {
-        synth.triggerAttackRelease(notes, "2n");
+    if (sampler) {
+        // En un piano, las notas suenan mejor si las dejamos resonar un poco más ("1n" = redonda)
+        sampler.triggerAttackRelease(notes, "1n");
     }
 }
 
@@ -19,26 +43,17 @@ export async function playProgression(progression, dictionary) {
     await Tone.start();
     const now = Tone.now();
     
-    // Configuramos un tempo virtual (cuánto dura cada acorde entero)
-    const duracionAcorde = Tone.Time("1m").toSeconds(); // 1 compás entero (más lento y relajado)
-    
-    // Calculamos el espacio entre cada nota del arpegio
-    // Si el acorde tiene 3 notas, las dividimos equitativamente en ese compás
-    const velocidadArpegio = 0.3; // Segundos de diferencia entre nota y nota
+    const duracionAcorde = Tone.Time("1m").toSeconds(); 
+    const velocidadArpegio = 0.3; 
 
     progression.forEach((chordName, indiceAcorde) => {
         const notes = dictionary[chordName].notes;
-        
-        // Calculamos cuándo empieza este acorde en la línea de tiempo
         const inicioAcorde = now + (indiceAcorde * duracionAcorde);
 
-        // En lugar de tocar el bloque, iteramos sobre cada nota individualmente
         notes.forEach((nota, indiceNota) => {
-            // Cada nota suena un poco más tarde que la anterior
             const inicioNota = inicioAcorde + (indiceNota * velocidadArpegio);
-            
-            // Hacemos que la nota sea corta y saltarina ("8n" = corchea)
-            synth.triggerAttackRelease(nota, "8n", inicioNota);
+            // Usamos "2n" en el arpegio para simular el pedal de resonancia del piano
+            sampler.triggerAttackRelease(nota, "2n", inicioNota);
         });
     });
 }
