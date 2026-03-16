@@ -1,7 +1,8 @@
 <script>
-    import './app.css'; // Cargamos el reset y las variables globales
+    import './app.css'; // Mantenemos tu CSS global intacto
 
-    import { emotionPacks, getDynamicOptions } from './lib/harmony.js';
+    // Asegúrate de importar CHROMATIC_SCALE
+    import { emotionPacks, getDynamicOptions, CHROMATIC_SCALE } from './lib/harmony.js';
     import { initAudio, playChord, playProgression } from './lib/audioEngine.js';
 
     let currentProgression = []; 
@@ -10,12 +11,14 @@
     let isLoading = false;
     
     let selectedVibeId = "melancholy"; 
+    let selectedRoot = "C"; // <-- La nueva variable para la nota base
 
     $: activePack = emotionPacks[selectedVibeId];
     $: isComplete = currentProgression.length === MAX_CHORDS;
     
+    // El motor dinámico ahora recibe selectedRoot
     $: currentOptions = hasStarted && !isComplete 
-        ? getDynamicOptions(selectedVibeId, currentProgression.length) 
+        ? getDynamicOptions(selectedVibeId, currentProgression.length, selectedRoot) 
         : [];
 
     async function handleStart() {
@@ -24,7 +27,8 @@
         isLoading = false;
         hasStarted = true;
         
-        const opcionesIniciales = getDynamicOptions(selectedVibeId, 0);
+        // Iniciamos pasando la nota base
+        const opcionesIniciales = getDynamicOptions(selectedVibeId, 0, selectedRoot);
         addChord(opcionesIniciales[0]);
     }
 
@@ -49,17 +53,28 @@
     <p>Select a vibe and build your dynamic progression.</p>
 
     {#if !hasStarted}
-        <div class="vibe-selector">
-            <label for="vibe">Emotion:</label>
-            <select id="vibe" bind:value={selectedVibeId} disabled={isLoading}>
-                {#each Object.entries(emotionPacks) as [id, pack]}
-                    <option value={id}>{pack.name}</option>
-                {/each}
-            </select>
+        <div class="selectors-container">
+            <div class="selector-group">
+                <label for="vibe">Emotion:</label>
+                <select id="vibe" bind:value={selectedVibeId} disabled={isLoading}>
+                    {#each Object.entries(emotionPacks) as [id, pack]}
+                        <option value={id}>{pack.name}</option>
+                    {/each}
+                </select>
+            </div>
+
+            <div class="selector-group">
+                <label for="root">Key:</label>
+                <select id="root" bind:value={selectedRoot} disabled={isLoading}>
+                    {#each CHROMATIC_SCALE as note}
+                        <option value={note}>{note}</option>
+                    {/each}
+                </select>
+            </div>
         </div>
 
         <button class="btn-start" on:click={handleStart} disabled={isLoading}>
-            {isLoading ? "Cargando audio..." : `Start with ${activePack.root}`}
+            {isLoading ? "Cargando audio..." : `Start in ${selectedRoot} ${activePack.name}`}
         </button>
     {/if}
 
@@ -96,7 +111,7 @@
 </main>
 
 <style>
-    /* Estilos ENCAPSULADOS: Solo afectan a este archivo HTML */
+    /* Estilos encapsulados de tu diseño claro y minimalista original */
     
     main {
         text-align: center;
@@ -104,9 +119,15 @@
         max-width: 600px;
         margin-top: 4rem;
         padding: 0 1.5rem;
+        margin-left: auto;
+        margin-right: auto;
     }
 
-    .vibe-selector {
+    /* Adaptamos el contenedor para que los selectores queden uno al lado del otro */
+    .selectors-container {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
         background-color: var(--bg-secondary);
         padding: 1rem;
         border-radius: 8px;
@@ -114,22 +135,27 @@
         margin-bottom: 1.5rem;
     }
 
+    .selector-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
     select {
         padding: 0.5rem;
         border-radius: 4px;
         border: 1px solid var(--border-focus);
         background: var(--bg-main);
-        margin-left: 0.5rem;
         font-family: inherit;
         cursor: pointer;
     }
 
-    /* Sistema de botones */
     button {
         font-family: inherit;
         cursor: pointer;
         border-radius: 8px;
         transition: all 0.2s ease;
+        border: none;
     }
 
     button:disabled {
@@ -151,7 +177,6 @@
         background-color: var(--accent-blue-hover);
     }
 
-    /* Cuadrícula de opciones dinámicas */
     .options-grid {
         display: flex;
         flex-direction: column;
@@ -185,7 +210,6 @@
         margin-top: 0.25rem;
     }
 
-    /* Lienzo de progresión (Los huecos) */
     .canvas {
         display: flex;
         justify-content: center;
@@ -231,7 +255,6 @@
         font-size: 1.5rem;
     }
 
-    /* Controles finales */
     .controls {
         display: flex;
         justify-content: center;
