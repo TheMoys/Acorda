@@ -1,41 +1,41 @@
 <script>
-    import { emotionPacks } from './lib/harmony.js';
+    import './app.css'; // Cargamos el reset y las variables globales
+
+    import { emotionPacks, getDynamicOptions } from './lib/harmony.js';
     import { initAudio, playChord, playProgression } from './lib/audioEngine.js';
 
-    let currentProgression = [];
+    let currentProgression = []; 
     const MAX_CHORDS = 4;
     let hasStarted = false;
     let isLoading = false;
     
-    // Nueva variable para controlar la emoción seleccionada
     let selectedVibeId = "melancholy"; 
 
-    // Reactividad: Svelte recalcula esto automáticamente si cambia selectedVibeId
     $: activePack = emotionPacks[selectedVibeId];
-    $: activeDictionary = activePack.dictionary;
-    
-    $: lastChord = currentProgression[currentProgression.length - 1];
-    $: currentOptions = lastChord ? activeDictionary[lastChord].next : [];
     $: isComplete = currentProgression.length === MAX_CHORDS;
+    
+    $: currentOptions = hasStarted && !isComplete 
+        ? getDynamicOptions(selectedVibeId, currentProgression.length) 
+        : [];
 
     async function handleStart() {
         isLoading = true;
         await initAudio();
         isLoading = false;
         hasStarted = true;
-        // Arrancamos con el acorde base de la emoción elegida
-        addChord(activePack.startChord);
+        
+        const opcionesIniciales = getDynamicOptions(selectedVibeId, 0);
+        addChord(opcionesIniciales[0]);
     }
 
-    function addChord(chordName) {
+    function addChord(option) {
         if (isComplete) return;
-        currentProgression = [...currentProgression, chordName];
-        playChord(activeDictionary[chordName].notes);
+        currentProgression = [...currentProgression, option];
+        playChord(option.notes);
     }
 
     async function handlePlayFull() {
-        // Le pasamos el diccionario activo para que el motor sepa qué notas tocar
-        await playProgression(currentProgression, activeDictionary);
+        await playProgression(currentProgression);
     }
 
     function handleReset() {
@@ -46,11 +46,11 @@
 
 <main>
     <h2>acorda</h2>
-    <p>Select a vibe and build your 4-chord progression.</p>
+    <p>Select a vibe and build your dynamic progression.</p>
 
     {#if !hasStarted}
         <div class="vibe-selector">
-            <label for="vibe">Choose Emotion:</label>
+            <label for="vibe">Emotion:</label>
             <select id="vibe" bind:value={selectedVibeId} disabled={isLoading}>
                 {#each Object.entries(emotionPacks) as [id, pack]}
                     <option value={id}>{pack.name}</option>
@@ -58,51 +58,195 @@
             </select>
         </div>
 
-        <button class="btn-primary" on:click={handleStart} disabled={isLoading}>
-            {isLoading ? "Loading Grand Piano..." : `Start with ${activePack.startChord}`}
+        <button class="btn-start" on:click={handleStart} disabled={isLoading}>
+            {isLoading ? "Cargando audio..." : `Start with ${activePack.root}`}
         </button>
     {/if}
 
     {#if hasStarted && !isComplete}
-        <div class="options-container">
+        <div class="options-grid">
             {#each currentOptions as option}
-                <button on:click={() => addChord(option.target)}>
-                    {option.label} ({option.target})
+                <button class="chord-btn" on:click={() => addChord(option)}>
+                    <span class="btn-title">{option.label}</span>
+                    <span class="btn-subtitle">{option.chordName} — {option.functionName}</span>
                 </button>
             {/each}
         </div>
     {/if}
 
-    <div class="history">
+    <div class="canvas">
         {#each Array(MAX_CHORDS) as _, i}
-            <span>{currentProgression[i] || "_"}</span>
+            <div class="slot {currentProgression[i] ? 'filled' : 'empty'}">
+                {#if currentProgression[i]}
+                    <span class="slot-chord">{currentProgression[i].chordName}</span>
+                    <span class="slot-degree">{currentProgression[i].numeral}</span>
+                {:else}
+                    <span class="slot-placeholder">_</span>
+                {/if}
+            </div>
         {/each}
     </div>
 
     {#if isComplete}
         <div class="controls">
-            <button class="btn-play" on:click={handlePlayFull}>▶ Play Song</button>
-            <button class="btn-reset" on:click={handleReset}>Start Over</button>
+            <button class="btn-action" on:click={handlePlayFull}>▶ Reproducir</button>
+            <button class="btn-action outline" on:click={handleReset}>Reiniciar</button>
         </div>
     {/if}
 </main>
 
 <style>
-    main { font-family: sans-serif; text-align: center; max-width: 600px; margin: 2rem auto; }
+    /* Estilos ENCAPSULADOS: Solo afectan a este archivo HTML */
     
-    .vibe-selector { margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
-    select { padding: 8px; font-size: 1rem; border-radius: 4px; border: 1px solid #cbd5e1; margin-left: 10px; cursor: pointer; }
-    
-    .options-container { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-    .controls { display: flex; justify-content: center; gap: 15px; margin-top: 30px; }
-    
-    button { padding: 1rem; font-size: 1.1rem; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background: white; transition: background 0.2s;}
-    button:hover:not(:disabled) { background: #f0f0f0; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    
-    .btn-primary { background: #e0e7ff; border-color: #a5b4fc; font-weight: bold; width: 100%; }
-    .btn-play { background: #dcfce3; border-color: #86efac; font-weight: bold; }
-    .btn-reset { background: #fee2e2; border-color: #fca5a5; }
-    
-    .history { margin: 2rem 0; font-size: 1.5rem; color: #333; font-weight: bold; letter-spacing: 0.5rem; }
+    main {
+        text-align: center;
+        width: 100%;
+        max-width: 600px;
+        margin-top: 4rem;
+        padding: 0 1.5rem;
+    }
+
+    .vibe-selector {
+        background-color: var(--bg-secondary);
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-light);
+        margin-bottom: 1.5rem;
+    }
+
+    select {
+        padding: 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-focus);
+        background: var(--bg-main);
+        margin-left: 0.5rem;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    /* Sistema de botones */
+    button {
+        font-family: inherit;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .btn-start {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        background-color: var(--accent-blue);
+        border: 1px solid var(--border-focus);
+        color: var(--text-dark);
+    }
+
+    .btn-start:hover:not(:disabled) {
+        background-color: var(--accent-blue-hover);
+    }
+
+    /* Cuadrícula de opciones dinámicas */
+    .options-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .chord-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.25rem;
+        background-color: var(--primary-btn);
+        border: 1px solid var(--border-light);
+    }
+
+    .chord-btn:hover {
+        background-color: var(--primary-btn-hover);
+        border-color: var(--border-focus);
+    }
+
+    .btn-title {
+        font-weight: 600;
+        font-size: 1.05rem;
+        color: var(--text-dark);
+    }
+
+    .btn-subtitle {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+
+    /* Lienzo de progresión (Los huecos) */
+    .canvas {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin: 3rem 0;
+    }
+
+    .slot {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 80px;
+        height: 85px;
+        border-radius: 12px;
+    }
+
+    .slot.empty {
+        border: 2px dashed var(--border-focus);
+        background-color: var(--bg-secondary);
+    }
+
+    .slot.filled {
+        background-color: var(--bg-main);
+        border: 1px solid var(--border-light);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .slot-chord {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-dark);
+    }
+
+    .slot-degree {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .slot-placeholder {
+        color: var(--border-focus);
+        font-size: 1.5rem;
+    }
+
+    /* Controles finales */
+    .controls {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .btn-action {
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        background-color: var(--bg-main);
+        border: 1px solid var(--border-focus);
+        color: var(--text-dark);
+    }
+
+    .btn-action:hover {
+        background-color: var(--primary-btn-hover);
+    }
 </style>

@@ -1,25 +1,23 @@
 import * as Tone from 'tone';
 
 let sampler;
+let bassSynth; // Nuestro nuevo instrumento para el pulso profundo
 
 export async function initAudio() {
-    // Si ya está cargado, no hacemos nada
-    if (sampler) return;
+    if (sampler && bassSynth) return;
 
     await Tone.start();
 
-    // Creamos el Sampler apuntando a audios reales
+    // 1. Configuramos el piano (se queda igual)
     sampler = new Tone.Sampler({
         urls: {
             "C3": "C3.mp3",
             "C4": "C4.mp3",
             "C5": "C5.mp3"
         },
-        // Usamos este repositorio público para el prototipo
         baseUrl: "https://tonejs.github.io/audio/salamander/",
     }).toDestination();
 
-    // Añadimos una reverberación sutil para que el piano suene en una "habitación"
     const reverb = new Tone.Reverb({
         decay: 2.5,
         preDelay: 0.1
@@ -27,32 +25,58 @@ export async function initAudio() {
     
     sampler.connect(reverb);
 
-    // LA REGLA DE ORO: Pausamos la ejecución del código hasta que 
-    // todos los mp3 se hayan descargado de internet.
+    // 2. Creamos el sintetizador de bajos
+    // Usamos FMSynth porque tiene un sonido rico, casi metálico en graves, ideal para cine
+    bassSynth = new Tone.FMSynth({
+        harmonicity: 0.5,
+        modulationIndex: 1.2,
+        oscillator: { type: "sine" },
+        modulation: { type: "sawtooth" },
+        envelope: {
+            attack: 0.1, // Entra suavemente, no como un golpe seco
+            decay: 0.5,
+            sustain: 0.5,
+            release: 2
+        }
+    }).toDestination();
+    
+    // Le bajamos un poco el volumen para que no tape al piano
+    bassSynth.volume.value = -8; 
+
     await Tone.loaded();
 }
 
 export function playChord(notes) {
     if (sampler) {
-        // En un piano, las notas suenan mejor si las dejamos resonar un poco más ("1n" = redonda)
         sampler.triggerAttackRelease(notes, "1n");
+        
+        // Hacemos que el bajo también suene cuando pruebas un acorde suelto
+        if (bassSynth && notes.length > 0) {
+            // Cogemos la primera nota y le ponemos un 1 o 2 para que sea grave
+            const rootNote = notes[0].replace(/[0-9]/, "1"); 
+            bassSynth.triggerAttackRelease(rootNote, "1n");
+        }
     }
 }
 
-export async function playProgression(progression, dictionary) {
+export async function playProgression(progression) {
     await Tone.start();
     const now = Tone.now();
     
     const duracionAcorde = Tone.Time("1m").toSeconds(); 
     const velocidadArpegio = 0.3; 
 
-    progression.forEach((chordName, indiceAcorde) => {
-        const notes = dictionary[chordName].notes;
+    // Ahora iteramos sobre objetos de acordes, no sobre nombres de texto
+    progression.forEach((acordeObj, indiceAcorde) => {
+        // Las notas ya vienen listas dentro del objeto
+        const notes = acordeObj.notes; 
         const inicioAcorde = now + (indiceAcorde * duracionAcorde);
+
+        const rootNote = notes[0].replace(/[0-9]/, "1");
+        bassSynth.triggerAttackRelease(rootNote, "1m", inicioAcorde);
 
         notes.forEach((nota, indiceNota) => {
             const inicioNota = inicioAcorde + (indiceNota * velocidadArpegio);
-            // Usamos "2n" en el arpegio para simular el pedal de resonancia del piano
             sampler.triggerAttackRelease(nota, "2n", inicioNota);
         });
     });
