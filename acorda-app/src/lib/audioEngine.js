@@ -59,25 +59,43 @@ export function playChord(notes) {
     }
 }
 
-export async function playProgression(progression) {
+export async function playProgression(progression, onVisualSync) {
     await Tone.start();
     const now = Tone.now();
     
     const duracionAcorde = Tone.Time("1m").toSeconds(); 
     const velocidadArpegio = 0.3; 
 
-    // Ahora iteramos sobre objetos de acordes, no sobre nombres de texto
     progression.forEach((acordeObj, indiceAcorde) => {
-        // Las notas ya vienen listas dentro del objeto
         const notes = acordeObj.notes; 
         const inicioAcorde = now + (indiceAcorde * duracionAcorde);
 
+        // --- MAGIA DE SINCRONIZACIÓN VISUAL ---
+        // Tone.Draw programa un cambio visual en el momento exacto (inicioAcorde)
+        if (onVisualSync) {
+            Tone.Draw.schedule(() => {
+                // Esto se ejecuta en Svelte exactamente cuando suena el acorde
+                onVisualSync(notes);
+            }, inicioAcorde);
+        }
+
         const rootNote = notes[0].replace(/[0-9]/, "1");
-        bassSynth.triggerAttackRelease(rootNote, "1m", inicioAcorde);
+        // Aseguramos que bassSynth exista antes de tocarlo
+        if (typeof bassSynth !== 'undefined') {
+            bassSynth.triggerAttackRelease(rootNote, "1m", inicioAcorde);
+        }
 
         notes.forEach((nota, indiceNota) => {
             const inicioNota = inicioAcorde + (indiceNota * velocidadArpegio);
             sampler.triggerAttackRelease(nota, "2n", inicioNota);
         });
     });
+
+    // Programamos un último evento para apagar el piano al terminar la canción
+    if (onVisualSync) {
+        const finalCancion = now + (progression.length * duracionAcorde);
+        Tone.Draw.schedule(() => {
+            onVisualSync([]); // Pasamos un array vacío para apagar las luces
+        }, finalCancion);
+    }
 }

@@ -59,11 +59,15 @@
     }
 
     async function handlePlayFull() {
-        await playProgression(currentProgression);
+        // Le pasamos la progresión y una función que actualiza las teclas
+        await playProgression(currentProgression, (notasDelAcordeActual) => {
+            activeNotes = notasDelAcordeActual;
+        });
     }
 
     function handleReset() {
         currentProgression = [];
+        activeNotes = []; // Apagamos el piano
         hasStarted = false;
     }
 </script>
