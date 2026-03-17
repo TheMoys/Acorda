@@ -1,40 +1,60 @@
 <script>
-    import './app.css'; // Mantenemos tu CSS global intacto
+    import "./app.css"; // Mantenemos tu CSS global intacto
+    import Piano from "./lib/Piano.svelte";
 
     // Asegúrate de importar CHROMATIC_SCALE
-    import { emotionPacks, getDynamicOptions, CHROMATIC_SCALE } from './lib/harmony.js';
-    import { initAudio, playChord, playProgression } from './lib/audioEngine.js';
+    import {
+        emotionPacks,
+        getDynamicOptions,
+        CHROMATIC_SCALE,
+    } from "./lib/harmony.js";
+    import {
+        initAudio,
+        playChord,
+        playProgression,
+    } from "./lib/audioEngine.js";
 
-    let currentProgression = []; 
+    let currentProgression = [];
     const MAX_CHORDS = 4;
     let hasStarted = false;
     let isLoading = false;
-    
-    let selectedVibeId = "melancholy"; 
+    let activeNotes = [];
+
+    let selectedVibeId = "melancholy";
     let selectedRoot = "C"; // <-- La nueva variable para la nota base
 
     $: activePack = emotionPacks[selectedVibeId];
     $: isComplete = currentProgression.length === MAX_CHORDS;
-    
+
     // El motor dinámico ahora recibe selectedRoot
-    $: currentOptions = hasStarted && !isComplete 
-        ? getDynamicOptions(selectedVibeId, currentProgression.length, selectedRoot) 
-        : [];
+    $: currentOptions =
+        hasStarted && !isComplete
+            ? getDynamicOptions(
+                  selectedVibeId,
+                  currentProgression.length,
+                  selectedRoot,
+              )
+            : [];
 
     async function handleStart() {
         isLoading = true;
         await initAudio();
         isLoading = false;
         hasStarted = true;
-        
+
         // Iniciamos pasando la nota base
-        const opcionesIniciales = getDynamicOptions(selectedVibeId, 0, selectedRoot);
+        const opcionesIniciales = getDynamicOptions(
+            selectedVibeId,
+            0,
+            selectedRoot,
+        );
         addChord(opcionesIniciales[0]);
     }
 
     function addChord(option) {
         if (isComplete) return;
         currentProgression = [...currentProgression, option];
+        activeNotes = option.notes; // <--- Le decimos a Svelte qué notas iluminar
         playChord(option.notes);
     }
 
@@ -56,7 +76,11 @@
         <div class="selectors-container">
             <div class="selector-group">
                 <label for="vibe">Emotion:</label>
-                <select id="vibe" bind:value={selectedVibeId} disabled={isLoading}>
+                <select
+                    id="vibe"
+                    bind:value={selectedVibeId}
+                    disabled={isLoading}
+                >
                     {#each Object.entries(emotionPacks) as [id, pack]}
                         <option value={id}>{pack.name}</option>
                     {/each}
@@ -65,7 +89,11 @@
 
             <div class="selector-group">
                 <label for="root">Key:</label>
-                <select id="root" bind:value={selectedRoot} disabled={isLoading}>
+                <select
+                    id="root"
+                    bind:value={selectedRoot}
+                    disabled={isLoading}
+                >
                     {#each CHROMATIC_SCALE as note}
                         <option value={note}>{note}</option>
                     {/each}
@@ -74,7 +102,9 @@
         </div>
 
         <button class="btn-start" on:click={handleStart} disabled={isLoading}>
-            {isLoading ? "Cargando audio..." : `Start in ${selectedRoot} ${activePack.name}`}
+            {isLoading
+                ? "Cargando audio..."
+                : `Start in ${selectedRoot} ${activePack.name}`}
         </button>
     {/if}
 
@@ -83,7 +113,9 @@
             {#each currentOptions as option}
                 <button class="chord-btn" on:click={() => addChord(option)}>
                     <span class="btn-title">{option.label}</span>
-                    <span class="btn-subtitle">{option.chordName} — {option.functionName}</span>
+                    <span class="btn-subtitle"
+                        >{option.chordName} — {option.functionName}</span
+                    >
                 </button>
             {/each}
         </div>
@@ -93,8 +125,12 @@
         {#each Array(MAX_CHORDS) as _, i}
             <div class="slot {currentProgression[i] ? 'filled' : 'empty'}">
                 {#if currentProgression[i]}
-                    <span class="slot-chord">{currentProgression[i].chordName}</span>
-                    <span class="slot-degree">{currentProgression[i].numeral}</span>
+                    <span class="slot-chord"
+                        >{currentProgression[i].chordName}</span
+                    >
+                    <span class="slot-degree"
+                        >{currentProgression[i].numeral}</span
+                    >
                 {:else}
                     <span class="slot-placeholder">_</span>
                 {/if}
@@ -102,17 +138,28 @@
         {/each}
     </div>
 
+    {#if hasStarted}
+        <section class="visualizer-container">
+            <h3 class="visualizer-title">Voicing</h3>
+            <Piano {activeNotes} />
+        </section>
+    {/if}
+
     {#if isComplete}
         <div class="controls">
-            <button class="btn-action" on:click={handlePlayFull}>▶ Reproducir</button>
-            <button class="btn-action outline" on:click={handleReset}>Reiniciar</button>
+            <button class="btn-action" on:click={handlePlayFull}
+                >▶ Reproducir</button
+            >
+            <button class="btn-action outline" on:click={handleReset}
+                >Reiniciar</button
+            >
         </div>
     {/if}
 </main>
 
 <style>
     /* Estilos encapsulados de tu diseño claro y minimalista original */
-    
+
     main {
         text-align: center;
         width: 100%;
@@ -271,5 +318,20 @@
 
     .btn-action:hover {
         background-color: var(--primary-btn-hover);
+    }
+
+    .visualizer-container {
+        margin: 2rem 0;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .visualizer-title {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+        font-weight: 600;
     }
 </style>
