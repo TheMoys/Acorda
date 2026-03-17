@@ -58,6 +58,24 @@
         playChord(option.notes);
     }
 
+    function undoLastChord() {
+        // Si no hay acordes, no hacemos nada
+        if (currentProgression.length === 0) return;
+
+        // Cortamos el último elemento del arreglo
+        currentProgression = currentProgression.slice(0, -1);
+
+        // Si aún quedan acordes después de borrar, actualizamos el piano y el sonido
+        if (currentProgression.length > 0) {
+            const lastChord = currentProgression[currentProgression.length - 1];
+            activeNotes = lastChord.notes;
+            playChord(lastChord.notes); // Tocamos el acorde en el que nos hemos quedado
+        } else {
+            // Si hemos borrado el único que había, apagamos el piano
+            activeNotes = [];
+        }
+    }
+
     async function handlePlayFull() {
         // Le pasamos la progresión y una función que actualiza las teclas
         await playProgression(currentProgression, (notasDelAcordeActual) => {
@@ -113,6 +131,16 @@
     {/if}
 
     {#if hasStarted && !isComplete}
+        <div class="options-header">
+            <h3 class="section-title">Suggested Next Steps</h3>
+
+            {#if currentProgression.length > 0}
+                <button class="btn-undo" on:click={undoLastChord}>
+                    ⟲ Deshacer último
+                </button>
+            {/if}
+        </div>
+
         <div class="options-grid">
             {#each currentOptions as option}
                 <button class="chord-btn" on:click={() => addChord(option)}>
@@ -337,5 +365,40 @@
         color: var(--text-muted);
         margin-bottom: 1rem;
         font-weight: 600;
+    }
+
+    /* Estilos para la cabecera de opciones y botón de deshacer */
+    .options-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        padding: 0 0.5rem;
+    }
+
+    .section-title {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .btn-undo {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .btn-undo:hover {
+        background: var(--bg-secondary);
+        color: var(--text-dark);
     }
 </style>
