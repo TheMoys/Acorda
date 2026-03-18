@@ -1,7 +1,7 @@
 import * as Tone from 'tone';
 
 let sampler;
-let bassSynth; // Nuestro nuevo instrumento para el pulso profundo
+let bassSynth;
 
 export async function initAudio() {
     if (sampler && bassSynth) return;
@@ -59,28 +59,32 @@ export function playChord(notes) {
     }
 }
 
+export function setTempo(bpm) {
+    Tone.Transport.bpm.value = bpm;
+}
+
 export async function playProgression(progression, onVisualSync) {
     await Tone.start();
     const now = Tone.now();
     
+    // Al usar "1m" (un compás), Tone.js ya calcula los segundos reales según el BPM actual
     const duracionAcorde = Tone.Time("1m").toSeconds(); 
-    const velocidadArpegio = 0.3; 
+    
+    // CAMBIO CLAVE: El arpegio ya no es 0.3s fijos. 
+    // Ahora es "8n" (una corchea). Si el BPM sube, el arpegio va más rápido automáticamente.
+    const velocidadArpegio = Tone.Time("8n").toSeconds(); 
 
     progression.forEach((acordeObj, indiceAcorde) => {
         const notes = acordeObj.notes; 
         const inicioAcorde = now + (indiceAcorde * duracionAcorde);
 
-        // --- MAGIA DE SINCRONIZACIÓN VISUAL ---
-        // Tone.Draw programa un cambio visual en el momento exacto (inicioAcorde)
         if (onVisualSync) {
             Tone.Draw.schedule(() => {
-                // Esto se ejecuta en Svelte exactamente cuando suena el acorde
                 onVisualSync(notes);
             }, inicioAcorde);
         }
 
-        const rootNote = notes[0].replace(/[0-9]/, "2");
-        // Aseguramos que bassSynth exista antes de tocarlo
+        const rootNote = notes[0].replace(/[0-9]/, "1");
         if (typeof bassSynth !== 'undefined') {
             bassSynth.triggerAttackRelease(rootNote, "1m", inicioAcorde);
         }
@@ -91,11 +95,10 @@ export async function playProgression(progression, onVisualSync) {
         });
     });
 
-    // Programamos un último evento para apagar el piano al terminar la canción
     if (onVisualSync) {
         const finalCancion = now + (progression.length * duracionAcorde);
         Tone.Draw.schedule(() => {
-            onVisualSync([]); // Pasamos un array vacío para apagar las luces
+            onVisualSync([]); 
         }, finalCancion);
     }
 }

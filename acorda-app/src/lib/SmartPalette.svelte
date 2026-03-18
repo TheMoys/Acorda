@@ -10,6 +10,7 @@
     export let currentOptions = [];
     export let progressionLength = 0;
     export let chordComplexity = "triad";
+    export let globalBpm = 110;
 
     // Usamos variables vinculadas (bind) para que el padre se entere si cambian
     export let selectedVibeId;
@@ -117,16 +118,25 @@
         <div class="mastering-section">
             <div class="options-header">
                 <h4>Ajustes Finales</h4>
-                <button class="btn-undo" on:click={() => dispatch('undo')}>⟲ Deshacer último</button>
+                <button class="btn-undo" on:click={() => dispatch("undo")}
+                    >⟲ Deshacer último</button
+                >
             </div>
-            
+
             <div class="mastering-controls">
                 <div class="field">
                     <label for="tempo-slider">Tempo (BPM)</label>
-                    <input id="tempo-slider" type="range" min="60" max="180" value="110" class="slider" />
-                    <span class="val">110 BPM</span>
+                    <input
+                        id="tempo-slider"
+                        type="range"
+                        min="60"
+                        max="180"
+                        bind:value={globalBpm}
+                        class="slider"
+                    />
+                    <span class="val">{globalBpm} BPM</span>
                 </div>
-                
+
                 <div class="field">
                     <label for="playback-style">Estilo de reproducción</label>
                     <select id="playback-style">
@@ -317,9 +327,37 @@
         color: var(--bg-main);
     }
 
-    .mastering-section { margin-top: 1rem; animation: fadeIn 0.4s ease; }
-    .mastering-controls { display: flex; flex-direction: column; gap: 1.2rem; background: var(--bg-main); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-light); }
-    .slider { width: 100%; cursor: pointer; }
-    .val { font-size: 0.8rem; color: var(--text-muted); text-align: right; font-weight: bold; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .mastering-section {
+        margin-top: 1rem;
+        animation: fadeIn 0.4s ease;
+    }
+    .mastering-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+        background: var(--bg-main);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-light);
+    }
+    .slider {
+        width: 100%;
+        cursor: pointer;
+    }
+    .val {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-align: right;
+        font-weight: bold;
+    }
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
