@@ -59,6 +59,8 @@
         <div class="options-grid">
             {#each currentOptions as option}
                 <button class="chord-btn" on:click={() => dispatch('selectChord', option)}>
+                    <span class="btn-intent">{option.label}</span>
+                    
                     <span class="btn-title">{option.chordName}</span>
                     <span class="btn-subtitle">{option.functionName} ({option.numeral})</span>
                 </button>
@@ -117,4 +119,13 @@
     
     .btn-title { font-weight: 800; font-size: 1.2rem; color: var(--text-dark); }
     .btn-subtitle { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+
+    .btn-intent {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #ea580c; 
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+    }
 </style>
