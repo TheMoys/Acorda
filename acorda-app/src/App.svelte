@@ -83,6 +83,16 @@
         activeNotes = [];
         hasStarted = false;
     }
+
+    function handleRewind(event) {
+        const targetIndex = event.detail;
+        
+        currentProgression = currentProgression.slice(0, targetIndex + 1);
+        
+        const currentChord = currentProgression[currentProgression.length - 1];
+        activeNotes = currentChord.notes;
+        playChord(currentChord.notes);
+    }
 </script>
 
 <main class="studio-layout">
@@ -92,13 +102,13 @@
             <p>Construye tu secuencia armónica</p>
         </header>
 
-        <ProgressionCanvas
-            progression={currentProgression}
+        <ProgressionCanvas 
+            progression={currentProgression} 
             maxChords={MAX_CHORDS}
             {isComplete}
             on:play={handlePlayFull}
             on:reset={handleReset}
-        />
+            on:rewind={handleRewind} />
 
         {#if hasStarted}
             <div class="piano-section">

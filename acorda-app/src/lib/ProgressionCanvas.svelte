@@ -10,17 +10,24 @@
 <div class="canvas-container">
     <div class="canvas">
         {#each Array(maxChords) as _, i}
-            <div class="slot {progression[i] ? 'filled' : 'empty'}">
-                {#if progression[i]}
+            {#if progression[i]}
+                <button 
+                    type="button"
+                    class="slot filled"
+                    on:click={() => dispatch('rewind', i)}
+                    title="Haz clic para volver a este punto"
+                >
                     <span class="slot-chord">{progression[i].chordName}</span>
                     <span class="slot-degree">{progression[i].numeral}</span>
-                {:else}
+                    <div class="rewind-overlay">⟲ Volver</div>
+                </button>
+            {:else}
+                <div class="slot empty">
                     <span class="slot-placeholder">+</span>
-                {/if}
-            </div>
+                </div>
+            {/if}
         {/each}
     </div>
-
     {#if isComplete}
         <div class="controls">
             <button class="btn-action" on:click={() => dispatch('play')}>▶ Reproducir Bucle</button>
@@ -47,6 +54,8 @@
         height: 130px;
         border-radius: 12px;
         background-color: var(--bg-main);
+        font-family: inherit;
+        padding: 0;
     }
 
     .slot.empty {
@@ -84,5 +93,30 @@
         background-color: transparent;
         color: var(--text-dark);
         border: 1px solid var(--border-focus);
+    }
+
+    .slot.filled {
+        /* ... tus estilos actuales ... */
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .rewind-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--accent-blue);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .slot.filled:hover .rewind-overlay {
+        opacity: 1; /* Aparece al pasar el ratón */
     }
 </style>
