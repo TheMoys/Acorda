@@ -53,7 +53,7 @@ export function playChord(notes) {
         // Hacemos que el bajo también suene cuando pruebas un acorde suelto
         if (bassSynth && notes.length > 0) {
             // Cogemos la primera nota y le ponemos un 1 o 2 para que sea grave
-            const rootNote = notes[0].replace(/[0-9]/, "1"); 
+            const rootNote = notes[0].replace(/[0-9]/, "2"); 
             bassSynth.triggerAttackRelease(rootNote, "1n");
         }
     }
@@ -79,7 +79,7 @@ export async function playProgression(progression, onVisualSync) {
             }, inicioAcorde);
         }
 
-        const rootNote = notes[0].replace(/[0-9]/, "1");
+        const rootNote = notes[0].replace(/[0-9]/, "2");
         // Aseguramos que bassSynth exista antes de tocarlo
         if (typeof bassSynth !== 'undefined') {
             bassSynth.triggerAttackRelease(rootNote, "1m", inicioAcorde);
