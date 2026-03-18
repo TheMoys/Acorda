@@ -51,46 +51,42 @@ export function buildChord(scaleNotes, degree, complexity = "triad", octave = 3)
     return notes;
 }
 
-export function getDynamicOptions(emotionId, currentProgressionLength, rootNote) {
+export function getDynamicOptions(emotionId, currentProgressionLength, rootNote, complexity = "triad") {
     const emotion = emotionPacks[emotionId];
-    // Calculamos la escala dinámicamente desde la nota que elija el usuario
     const scaleNotes = calculateScale(rootNote, emotion.type);
+    
+    // Pequeño traductor para que la interfaz muestre el nombre correcto
+    const getSuffix = (baseName, degree) => {
+        if (complexity === "triad") return baseName;
+        if (complexity === "sus2") return baseName.replace('m', '') + "sus2";
+        if (complexity === "seventh") {
+            if (baseName.includes('m')) return baseName + "7"; // Menores a m7
+            if (degree === 1 || degree === 4) return baseName + "maj7"; // I y IV suelen ser maj7
+            return baseName + "7"; // El resto (Dominantes) son 7
+        }
+        return baseName;
+    };
 
     let options = [];
 
     if (emotion.type === "major" || emotion.type === "lydian") {
         options = [
-            { label: "Establecer base", functionName: "Tónica", numeral: "I", chordName: scaleNotes[0], notes: buildChord(scaleNotes, 1) },
-            { label: "Abrir el sonido", functionName: "Subdominante", numeral: "IV", chordName: scaleNotes[3], notes: buildChord(scaleNotes, 4) },
-            { label: "Añadir energía", functionName: "Dominante", numeral: "V", chordName: scaleNotes[4], notes: buildChord(scaleNotes, 5) },
-            { label: "Toque nostalgia", functionName: "Relativo Menor", numeral: "vi", chordName: scaleNotes[5] + "m", notes: buildChord(scaleNotes, 6) }
+            { label: "Establecer base", functionName: "Tónica", numeral: "I", chordName: getSuffix(scaleNotes[0], 1), notes: buildChord(scaleNotes, 1, complexity) },
+            { label: "Abrir el sonido", functionName: "Subdominante", numeral: "IV", chordName: getSuffix(scaleNotes[3], 4), notes: buildChord(scaleNotes, 4, complexity) },
+            { label: "Añadir energía", functionName: "Dominante", numeral: "V", chordName: getSuffix(scaleNotes[4], 5), notes: buildChord(scaleNotes, 5, complexity) },
+            { label: "Toque nostalgia", functionName: "Relativo Menor", numeral: "vi", chordName: getSuffix(scaleNotes[5]+"m", 6), notes: buildChord(scaleNotes, 6, complexity) }
         ];
-    }
-    // Agrupamos todos los Menores y sus variantes
+    } 
     else if (emotion.type === "minor" || emotion.type === "dorian" || emotion.type === "phrygian") {
         options = [
-            { label: "Establecer base", functionName: "Tónica", numeral: "i", chordName: scaleNotes[0] + "m", notes: buildChord(scaleNotes, 1) },
-            { label: "Dar un respiro", functionName: "Subdominante", numeral: "iv", chordName: scaleNotes[3] + "m", notes: buildChord(scaleNotes, 4) },
-            { label: "Añadir tensión", functionName: "Dominante", numeral: "V", chordName: scaleNotes[4], notes: buildChord(scaleNotes, 5) },
-            { label: "Ir a la luz", functionName: "Relativo Mayor", numeral: "III", chordName: scaleNotes[2], notes: buildChord(scaleNotes, 3) }
+            { label: "Establecer base", functionName: "Tónica", numeral: "i", chordName: getSuffix(scaleNotes[0]+"m", 1), notes: buildChord(scaleNotes, 1, complexity) },
+            { label: "Dar un respiro", functionName: "Subdominante", numeral: "iv", chordName: getSuffix(scaleNotes[3]+"m", 4), notes: buildChord(scaleNotes, 4, complexity) },
+            { label: "Añadir tensión", functionName: "Dominante", numeral: "V", chordName: getSuffix(scaleNotes[4], 5), notes: buildChord(scaleNotes, 5, complexity) }, 
+            { label: "Ir a la luz", functionName: "Relativo Mayor", numeral: "III", chordName: getSuffix(scaleNotes[2], 3), notes: buildChord(scaleNotes, 3, complexity) }
         ];
     }
 
-    if (currentProgressionLength === 3) {
-        if (emotion.type === "minor") {
-            options = [
-                { label: "Resolución Definitiva", functionName: "Tónica", numeral: "i", chordName: scaleNotes[0] + "m", notes: buildChord(scaleNotes, 1) },
-                { label: "Final Sorpresa", functionName: "Subdominante", numeral: "VI", chordName: scaleNotes[5], notes: buildChord(scaleNotes, 6) },
-                { label: "Preparar el Bucle", functionName: "Dominante", numeral: "V", chordName: scaleNotes[4], notes: buildChord(scaleNotes, 5) }
-            ];
-        } else {
-            options = [
-                { label: "Resolución Definitiva", functionName: "Tónica", numeral: "I", chordName: scaleNotes[0], notes: buildChord(scaleNotes, 1) },
-                { label: "Final Melancólico", functionName: "Relativo Menor", numeral: "vi", chordName: scaleNotes[5] + "m", notes: buildChord(scaleNotes, 6) },
-                { label: "Preparar el Bucle", functionName: "Dominante", numeral: "V", chordName: scaleNotes[4], notes: buildChord(scaleNotes, 5) }
-            ];
-        }
-    }
+    // (Opcional: puedes aplicar la misma lógica al bloque de currentProgressionLength === 3 si quieres)
 
     return options;
 }
