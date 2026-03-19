@@ -9,6 +9,7 @@
         initAudio,
         playChord,
         playProgression,
+        setTempo,
     } from "./lib/audioEngine.js";
 
     // Importamos nuestros nuevos componentes visuales
@@ -26,7 +27,9 @@
 
     let selectedVibeId = "melancholy";
     let selectedRoot = "C";
+    let globalBpm = 110;
 
+    $: setTempo(globalBpm);
     $: isComplete = currentProgression.length === MAX_CHORDS;
     $: currentOptions =
         hasStarted && !isComplete
@@ -86,9 +89,9 @@
 
     function handleRewind(event) {
         const targetIndex = event.detail;
-        
+
         currentProgression = currentProgression.slice(0, targetIndex + 1);
-        
+
         const currentChord = currentProgression[currentProgression.length - 1];
         activeNotes = currentChord.notes;
         playChord(currentChord.notes);
@@ -102,13 +105,14 @@
             <p>Construye tu secuencia armónica</p>
         </header>
 
-        <ProgressionCanvas 
-            progression={currentProgression} 
+        <ProgressionCanvas
+            progression={currentProgression}
             maxChords={MAX_CHORDS}
             {isComplete}
             on:play={handlePlayFull}
             on:reset={handleReset}
-            on:rewind={handleRewind} />
+            on:rewind={handleRewind}
+        />
 
         {#if hasStarted}
             <div class="piano-section">
@@ -130,6 +134,7 @@
             bind:selectedVibeId
             bind:selectedRoot
             bind:chordComplexity
+            bind:globalBpm
             on:start={handleStart}
             on:selectChord={handleAddChord}
             on:undo={handleUndo}
