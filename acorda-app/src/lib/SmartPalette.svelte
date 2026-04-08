@@ -11,6 +11,7 @@
     export let progressionLength = 0;
     export let chordComplexity = "triad";
     export let globalBpm = 110;
+    export let playbackStyle = 'arpeggio';
 
     // Usamos variables vinculadas (bind) para que el padre se entere si cambian
     export let selectedVibeId;
@@ -138,12 +139,12 @@
                 </div>
 
                 <div class="field">
-                    <label for="playback-style">Estilo de reproducción</label>
-                    <select id="playback-style">
-                        <option>Arpegio Suave</option>
-                        <option>Acordes en Bloque</option>
-                    </select>
-                </div>
+                 <label for="playback-style">Estilo de reproducción</label>
+                 <select id="playback-style" bind:value={playbackStyle}>
+                     <option value="arpeggio">Arpegio Suave</option>
+                     <option value="block">Acordes en Bloque</option>
+                 </select>
+             </div>
             </div>
 
             <button class="btn-start" style="margin-top: 1.5rem;">

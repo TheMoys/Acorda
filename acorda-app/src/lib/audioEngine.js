@@ -63,15 +63,11 @@ export function setTempo(bpm) {
     Tone.Transport.bpm.value = bpm;
 }
 
-export async function playProgression(progression, onVisualSync) {
+export async function playProgression(progression, onVisualSync, playbackStyle = 'arpeggio') {
     await Tone.start();
     const now = Tone.now();
     
-    // Al usar "1m" (un compás), Tone.js ya calcula los segundos reales según el BPM actual
     const duracionAcorde = Tone.Time("1m").toSeconds(); 
-    
-    // CAMBIO CLAVE: El arpegio ya no es 0.3s fijos. 
-    // Ahora es "8n" (una corchea). Si el BPM sube, el arpegio va más rápido automáticamente.
     const velocidadArpegio = Tone.Time("8n").toSeconds(); 
 
     progression.forEach((acordeObj, indiceAcorde) => {
@@ -89,10 +85,17 @@ export async function playProgression(progression, onVisualSync) {
             bassSynth.triggerAttackRelease(rootNote, "1m", inicioAcorde);
         }
 
-        notes.forEach((nota, indiceNota) => {
-            const inicioNota = inicioAcorde + (indiceNota * velocidadArpegio);
-            sampler.triggerAttackRelease(nota, "2n", inicioNota);
-        });
+        // --- LA NUEVA LÓGICA DE TEXTURA ---
+        if (playbackStyle === 'arpeggio') {
+            // Toca nota por nota
+            notes.forEach((nota, indiceNota) => {
+                const inicioNota = inicioAcorde + (indiceNota * velocidadArpegio);
+                sampler.triggerAttackRelease(nota, "2n", inicioNota);
+            });
+        } else if (playbackStyle === 'block') {
+            // Toca todas las notas a la vez (le pasamos el array completo)
+            sampler.triggerAttackRelease(notes, "1m", inicioAcorde);
+        }
     });
 
     if (onVisualSync) {

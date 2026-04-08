@@ -28,6 +28,7 @@
     let selectedVibeId = "melancholy";
     let selectedRoot = "C";
     let globalBpm = 110;
+    let playbackStyle = "arpeggio";
 
     $: setTempo(globalBpm);
     $: isComplete = currentProgression.length === MAX_CHORDS;
@@ -76,9 +77,13 @@
     }
 
     async function handlePlayFull() {
-        await playProgression(currentProgression, (notasDelAcordeActual) => {
-            activeNotes = notasDelAcordeActual;
-        });
+        await playProgression(
+            currentProgression,
+            (notasDelAcordeActual) => {
+                activeNotes = notasDelAcordeActual;
+            },
+            playbackStyle,
+        );
     }
 
     function handleReset() {
@@ -135,6 +140,7 @@
             bind:selectedRoot
             bind:chordComplexity
             bind:globalBpm
+            bind:playbackStyle
             on:start={handleStart}
             on:selectChord={handleAddChord}
             on:undo={handleUndo}
